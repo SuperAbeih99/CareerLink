@@ -1,0 +1,224 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables and secrets (ROOT LEVEL)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.development.local
+.env.test.local
+.env.production.local
+
+# API keys and secrets (ROOT LEVEL)
+config/secrets.js
+config/keys.js
+config/database.js
+config/auth.js
+secrets/
+keys/
+*.key
+*.pem
+*.crt
+*.csr
+
+# Database files (ROOT LEVEL)
+*.db
+*.sqlite
+*.sqlite3
+database/
+db/
+backup/
+*.sql
+*.dump
+
+# Logs (ROOT LEVEL)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+*.lcov
+.nyc_output
+
+# Build outputs
+dist/
+build/
+out/
+
+# Cache directories
+.cache/
+cache/
+.parcel-cache
+.fusebox/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Uploads and user content (ROOT LEVEL)
+uploads/
+public/uploads/
+user-uploads/
+file-uploads/
+
+# Session files (ROOT LEVEL)
+sessions/
+*.session
+
+# SSL certificates (ROOT LEVEL)
+ssl/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Redis dump files
+dump.rdb
+
+# PM2 logs
+.pm2/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Kubernetes
+*.kubeconfig
+
+# Local development
+.local/
+local/
+
+# Package manager lock files (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# FRONTEND SPECIFIC - Job Portal
+frontend/job-portal/node_modules/
+frontend/job-portal/dist/
+frontend/job-portal/build/
+frontend/job-portal/.vite/
+frontend/job-portal/coverage/
+frontend/job-portal/.env
+frontend/job-portal/.env.local
+frontend/job-portal/.env.development
+frontend/job-portal/.env.test
+frontend/job-portal/.env.production
+frontend/job-portal/.env.staging
+frontend/job-portal/config/secrets.js
+frontend/job-portal/config/keys.js
+frontend/job-portal/config/database.js
+frontend/job-portal/config/auth.js
+frontend/job-portal/logs/
+frontend/job-portal/uploads/
+frontend/job-portal/sessions/
+frontend/job-portal/backup/
+frontend/job-portal/ssl/
+frontend/job-portal/database/
+frontend/job-portal/db/
+frontend/job-portal/*.db
+frontend/job-portal/*.sqlite
+frontend/job-portal/*.sqlite3
+frontend/job-portal/*.sql
+frontend/job-portal/*.dump
+frontend/job-portal/*.key
+frontend/job-portal/*.pem
+frontend/job-portal/*.crt
+frontend/job-portal/*.csr
+
+# BACKEND SPECIFIC
+backend/node_modules/
+backend/logs/
+backend/uploads/
+backend/.env
+backend/.env.local
+backend/.env.development
+backend/.env.test
+backend/.env.production
+backend/.env.staging
+backend/config/local.js
+backend/config/local.json
+backend/config/secrets.js
+backend/config/keys.js
+backend/config/database.js
+backend/config/auth.js
+backend/sessions/
+backend/backup/
+backend/ssl/
+backend/database/
+backend/db/
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+backend/*.sql
+backend/*.dump
+backend/*.key
+backend/*.pem
+backend/*.crt
+backend/*.csr
+
+# Additional security patterns
+**/secrets/
+**/keys/
+**/private/
+**/confidential/
+**/sensitive/
+**/auth/
+**/database/
+**/db/
+**/uploads/
+**/sessions/
+**/backup/
+**/ssl/
+**/*.env*
+**/*.key
+**/*.pem
+**/*.crt
+**/*.csr
+**/*.db
+**/*.sqlite*
+**/*.sql
+**/*.dump
