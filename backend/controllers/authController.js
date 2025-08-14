@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const connectDB = require("../config/db");
 
 // Generate token
 const generateToken = (id) => {
@@ -8,12 +9,18 @@ const generateToken = (id) => {
 
 // @desc Register new user
 exports.register = async (req, res) => {
+  console.log("[AUTH] register route hit", req.body);
   try {
+    // Ensure DB ready (cached, short timeouts configured)
+    await connectDB();
+    console.log("[AUTH] DB connected for register");
+
     const { name, email, password, avatar, role } = req.body;
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "User already exists" });
 
     const user = await User.create({ name, email, password, role, avatar });
+    console.log("[AUTH] user created", user._id?.toString());
 
     res.status(201).json({
       _id: user._id,
@@ -29,6 +36,7 @@ exports.register = async (req, res) => {
     });
 
   } catch (err) {
+    console.error("[AUTH] register error:", err);
     res.status(500).json({ message: err.message });
   }
 };

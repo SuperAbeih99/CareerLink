@@ -5,6 +5,9 @@ const upload = require('../middlewares/uploadMiddleware')
 
 const router = express.Router();
 
+// Dummy fast route to isolate hangs (toggle as needed)
+// router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
+
 router.post("/register", register);
 router.post("/login", login);
 router.get("/me", protect, getMe);
