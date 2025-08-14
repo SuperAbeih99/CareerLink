@@ -15,11 +15,16 @@ exports.register = async (req, res) => {
     await connectDB();
     console.log("[AUTH] DB connected for register");
 
+    const withTimeout = (p, ms, label = 'op') => Promise.race([
+      p,
+      new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms))
+    ]);
+
     const { name, email, password, avatar, role } = req.body;
-    const userExists = await User.findOne({ email });
+    const userExists = await withTimeout(User.findOne({ email }), 2500, 'findOne');
     if (userExists) return res.status(400).json({ message: "User already exists" });
 
-    const user = await User.create({ name, email, password, role, avatar });
+    const user = await withTimeout(User.create({ name, email, password, role, avatar }), 3500, 'create');
     console.log("[AUTH] user created", user._id?.toString());
 
     res.status(201).json({

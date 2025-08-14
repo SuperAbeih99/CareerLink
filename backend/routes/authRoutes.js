@@ -6,6 +6,7 @@ const upload = require('../middlewares/uploadMiddleware')
 const router = express.Router();
 
 // Dummy fast route to isolate hangs (toggle as needed)
+// QUICK ISOLATION: Uncomment to bypass DB/bcrypt and verify routing
 // router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
 
 // TEMP: uncomment this to isolate DB/bcrypt issues. Comment back after testing.
