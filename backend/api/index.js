@@ -1,4 +1,9 @@
-console.log("[INDEX] api/index.js loading at", new Date().toISOString());
+console.log(
+  "[INDEX] api/index.js loading at",
+  new Date().toISOString(),
+  "region=",
+  process.env.VERCEL_REGION
+);
 
 let serverless;
 try {
