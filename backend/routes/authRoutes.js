@@ -2,9 +2,6 @@ const express = require("express");
 const { register, login, getMe } = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
 const upload = require('../middlewares/uploadMiddleware')
-const connectDB = require('../config/db')
-const bcrypt = require('bcryptjs')
-const User = require('../models/User')
 
 const router = express.Router();
 
@@ -17,15 +14,9 @@ const router = express.Router();
 // TEMP: uncomment this to isolate DB/bcrypt issues. Comment back after testing.
 // router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
 
-// Minimal endpoints to isolate routing (no DB/bcrypt) - TEMP
-router.post('/register', (req, res) => {
-  return res.json({ ok: true, msg: 'Register endpoint works' })
-})
-
-router.post('/login', (req, res) => {
-  return res.json({ ok: true, msg: 'Login endpoint works' })
-})
-// router.post("/login", login);
+// Register & Login (controller handlers)
+router.post('/register', register)
+router.post('/login', login)
 router.get("/me", protect, getMe);
 
 // Cloudinary upload returns req.file.path as the hosted URL
