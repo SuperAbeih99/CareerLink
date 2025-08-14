@@ -173,6 +173,7 @@ frontend/job-portal/*.csr
 backend/node_modules/
 backend/logs/
 backend/uploads/
+!backend/uploads/.gitkeep
 backend/.env
 backend/.env.local
 backend/.env.development
