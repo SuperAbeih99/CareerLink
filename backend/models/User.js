@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   companyName: String,
   companyDescription: String,
   companyLogo: String,
-}, { timestamps: true });
+}, { timestamps: true, autoIndex: false });
 
 // Encrypt password before save
 userSchema.pre("save", async function (next) {

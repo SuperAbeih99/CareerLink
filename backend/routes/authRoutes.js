@@ -9,12 +9,12 @@ const router = express.Router();
 // QUICK ISOLATION: Uncomment to bypass DB/bcrypt and verify routing
 // router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
 // For immediate test, enable dummy route (comment the real one below)
-router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
+// router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
 
 // TEMP: uncomment this to isolate DB/bcrypt issues. Comment back after testing.
 // router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
 
-// router.post("/register", register);
+router.post("/register", register);
 router.post("/login", login);
 router.get("/me", protect, getMe);
 

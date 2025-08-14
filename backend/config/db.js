@@ -9,6 +9,11 @@ async function connectDB() {
     const uri = process.env.MONGO_URI;
     if (!uri) throw new Error("MONGO_URI is not defined");
 
+    // Avoid index build delays on cold start
+    try {
+      mongoose.set("autoIndex", false);
+    } catch (_) {}
+
     cached.promise = new Promise((resolve, reject) => {
       const timeoutMs = 2500;
       const timer = setTimeout(() => {
