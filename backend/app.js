@@ -12,7 +12,12 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
-// Ensure DB connection before handling requests
+app.use(express.json());
+
+// Lightweight health (does not require DB)
+app.get("/health", (req, res) => res.json({ ok: true }));
+
+// Ensure DB connection before handling API routes
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -45,10 +50,7 @@ app.use(
   })
 );
 
-app.use(express.json());
-
-// Health check
-app.get("/health", (req, res) => res.json({ ok: true }));
+// CORS and body parser already applied above
 
 // Routes mounted under /api/v1
 app.use("/api/v1/auth", authRoutes);
@@ -58,6 +60,11 @@ app.use("/api/v1/applications", applicationRoutes);
 app.use("/api/v1/save-jobs", savedJobsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 
+// Basic error handler to avoid hanging responses
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  const message = err?.message || "Internal Server Error";
+  res.status(500).json({ error: message });
+});
+
 module.exports = app;
-
-
