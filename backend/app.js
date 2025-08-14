@@ -56,22 +56,18 @@ function withTimeout(promise, ms, label = "op") {
   ]);
 }
 
-// Ensure DB for API routes but fail FAST instead of hanging
+// 🛡️ Fast-fail DB connect for API paths only
 app.use(async (req, res, next) => {
-  if (req.path === "/health") return next();
+  // allow /health and any non-API path to skip DB check
+  if (req.path === '/health' || !req.path.startsWith('/api/')) return next();
+
+  console.log(`[DB] connect attempt for ${req.method} ${req.path} at ${new Date().toISOString()}`);
   try {
-    console.log(
-      `[DB] connect attempt for ${req.method} ${
-        req.path
-      } at ${new Date().toISOString()}`
-    );
-    await withTimeout(connectDB(), 4500, "Mongo connect");
+    await withTimeout(connectDB(), 4500, 'Mongo connect');
     return next();
   } catch (err) {
-    console.error("[DB] connect error:", err.message);
-    return res
-      .status(503)
-      .json({ message: "Database unavailable", error: err.message });
+    console.error('[DB] connect error:', err.message);
+    return res.status(503).json({ message: 'Database unavailable', error: err.message });
   }
 });
 
