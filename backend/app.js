@@ -13,51 +13,65 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 const app = express();
 
 // 🔊 boot log
-console.log('[BOOT] app.js loaded at', new Date().toISOString());
+console.log("[BOOT] app.js loaded at", new Date().toISOString());
 
 // CORS + JSON first
-const allowed = (process.env.CLIENT_URL || '')
-  .split(',')
-  .map(s => s.trim())
+const allowed = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((s) => s.trim())
   .filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
-      if (allowed.length === 0 || allowed.includes(origin)) return cb(null, true);
-      return cb(new Error('Not allowed by CORS'));
+      if (allowed.length === 0 || allowed.includes(origin))
+        return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
     },
     credentials: true,
-    methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization'],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
 
 // ✅ Health MUST be before any DB usage and return instantly
-app.get('/health', (req, res) => {
-  console.log('[HEALTH] hit at', new Date().toISOString(), 'region=', process.env.VERCEL_REGION);
+app.get("/health", (req, res) => {
+  console.log(
+    "[HEALTH] hit at",
+    new Date().toISOString(),
+    "region=",
+    process.env.VERCEL_REGION
+  );
   return res.status(200).json({ ok: true, ts: new Date().toISOString() });
 });
 
-function withTimeout(promise, ms, label = 'op') {
+function withTimeout(promise, ms, label = "op") {
   return Promise.race([
     promise,
-    new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)),
+    new Promise((_, rej) =>
+      setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
   ]);
 }
 
 // Ensure DB for API routes but fail FAST instead of hanging
 app.use(async (req, res, next) => {
-  if (req.path === '/health') return next();
+  if (req.path === "/health") return next();
   try {
-    console.log(`[DB] connect attempt for ${req.method} ${req.path} at ${new Date().toISOString()}`);
-    await withTimeout(connectDB(), 4500, 'Mongo connect');
+    console.log(
+      `[DB] connect attempt for ${req.method} ${
+        req.path
+      } at ${new Date().toISOString()}`
+    );
+    await withTimeout(connectDB(), 4500, "Mongo connect");
     return next();
   } catch (err) {
-    console.error('[DB] connect error:', err.message);
-    return res.status(503).json({ message: 'Database unavailable', error: err.message });
+    console.error("[DB] connect error:", err.message);
+    return res
+      .status(503)
+      .json({ message: "Database unavailable", error: err.message });
   }
 });
 
