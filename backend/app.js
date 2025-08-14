@@ -15,7 +15,7 @@ const app = express();
 // 🔊 boot log
 console.log("[BOOT] app.js loaded at", new Date().toISOString());
 
-// CORS + JSON first (Render/Node server compatible)
+// CORS + JSON first
 const allowed = (process.env.CLIENT_URL || "")
   .split(",")
   .map((s) => s.trim())
@@ -95,7 +95,7 @@ function withTimeout(promise, ms, label = "op") {
   ]);
 }
 
-// 🛡️ Fast-fail DB connect for API paths only (still fine under Node server)
+// 🛡️ Fast-fail DB connect for API paths only
 app.use(async (req, res, next) => {
   // allow /health and any non-API path to skip DB check
   if (req.path === "/health" || !req.path.startsWith("/api/")) return next();
