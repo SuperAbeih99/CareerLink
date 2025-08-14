@@ -1,5 +1,5 @@
+require("dotenv").config();
 const express = require("express");
-const path = require("path");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
@@ -12,13 +12,17 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
-// Database connection at boot
-connectDB().catch((err) => {
-  console.error("Failed to connect to MongoDB", err);
-  process.exit(1);
+// Ensure DB connection before handling requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
-// CORS setup
+// CORS setup with CLIENT_URL
 const getAllowedOrigins = () =>
   (process.env.CLIENT_URL || "")
     .split(",")
@@ -46,16 +50,13 @@ app.use(express.json());
 // Health check
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/jobs", jobRoutes);
-app.use("/api/applications", applicationRoutes);
-app.use("/api/save-jobs", savedJobsRoutes);
-app.use("/api/analytics", analyticsRoutes);
-
-// Static uploads
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Routes mounted under /api/v1
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/jobs", jobRoutes);
+app.use("/api/v1/applications", applicationRoutes);
+app.use("/api/v1/save-jobs", savedJobsRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
 
 module.exports = app;
 
