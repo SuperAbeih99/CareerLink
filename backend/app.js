@@ -48,8 +48,12 @@ app.get("/health", (req, res) => {
 });
 
 // DB-free probe under /api to confirm Express/routing without touching Mongo
-app.get('/api/ping', (req, res) => {
-  return res.status(200).json({ ok: true, where: 'app.js /api/ping', ts: new Date().toISOString() });
+app.get("/api/ping", (req, res) => {
+  return res.status(200).json({
+    ok: true,
+    where: "app.js /api/ping",
+    ts: new Date().toISOString(),
+  });
 });
 
 function withTimeout(promise, ms, label = "op") {
