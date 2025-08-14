@@ -36,6 +36,16 @@ app.use(
 );
 app.use(express.json());
 
+// Request log for every invocation (helps trace timeouts)
+app.use((req, res, next) => {
+  try {
+    console.log(
+      `[REQ] ${req.method} ${req.url} at ${new Date().toISOString()}`
+    );
+  } catch (_) {}
+  next();
+});
+
 // ✅ Health MUST be before any DB usage and return instantly
 app.get("/health", (req, res) => {
   console.log(
