@@ -9,7 +9,11 @@ try {
     res.statusCode = 500;
     res.setHeader("content-type", "application/json");
     res.end(
-      JSON.stringify({ ok: false, where: "serverless-http require", error: String(e) })
+      JSON.stringify({
+        ok: false,
+        where: "serverless-http require",
+        error: String(e),
+      })
     );
   };
   return;
@@ -25,7 +29,9 @@ try {
   module.exports = async (req, res) => {
     res.statusCode = 500;
     res.setHeader("content-type", "application/json");
-    res.end(JSON.stringify({ ok: false, where: "app require", error: String(e) }));
+    res.end(
+      JSON.stringify({ ok: false, where: "app require", error: String(e) })
+    );
   };
   return;
 }
