@@ -12,6 +12,7 @@ async function connectDB() {
     // Avoid index build delays on cold start
     try {
       mongoose.set("autoIndex", false);
+      mongoose.set("bufferCommands", false);
     } catch (_) {}
 
     cached.promise = new Promise((resolve, reject) => {
@@ -28,6 +29,8 @@ async function connectDB() {
           serverSelectionTimeoutMS: 2500,
           connectTimeoutMS: 2500,
           socketTimeoutMS: 10000,
+          w: 1,
+          wtimeoutMS: 2000,
         })
         .then((m) => {
           clearTimeout(timer);

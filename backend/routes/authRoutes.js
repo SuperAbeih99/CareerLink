@@ -26,20 +26,18 @@ router.post('/register', async (req, res) => {
     const rounds = parseInt(process.env.BCRYPT_ROUNDS || '6', 10)
     const hashed = await bcrypt.hash(req.body.password, rounds)
     console.log('[AUTH] inline password hashed')
-    const user = await User.create({
+    // Use lean writes with explicit collection to avoid model build delays
+    const user = await User.collection.insertOne({
       name: req.body.name,
       email: req.body.email,
       password: hashed,
       role: req.body.role,
-      avatar: req.body.avatar || ''
+      avatar: req.body.avatar || '',
+      createdAt: new Date(),
+      updatedAt: new Date()
     })
     console.log('[AUTH] inline user created', user._id?.toString())
-    return res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    })
+    return res.status(201).json({ ok: true })
   } catch (err) {
     console.error('[AUTH] inline register error:', err?.message || err)
     return res.status(500).json({ ok: false, error: String(err?.message || err) })
