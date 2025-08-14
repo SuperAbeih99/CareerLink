@@ -206,7 +206,6 @@ backend/*.csr
 **/private/
 **/confidential/
 **/sensitive/
-**/auth/
 **/database/
 **/db/
 **/uploads/
