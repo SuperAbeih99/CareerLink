@@ -10,7 +10,7 @@
     { "src": "^/api/db-check$", "dest": "api/db-check.js" },
     { "src": "^/api/ping$", "dest": "api/ping.js" },
     { "src": "^/health$", "dest": "api/health.js" },
-    { "src": "^/api/v1/auth/register$", "dest": "api/auth-register.js" },
+    
     { "src": "/(.*)", "dest": "api/index.js" }
   ]
 }

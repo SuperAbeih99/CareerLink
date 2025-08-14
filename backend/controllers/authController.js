@@ -1,5 +1,6 @@
-const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 const connectDB = require("../config/db");
 
 // Generate token
@@ -9,66 +10,97 @@ const generateToken = (id) => {
 
 // @desc Register new user
 exports.register = async (req, res) => {
-  console.log("[AUTH] register route hit", req.body);
+  const ts = new Date().toISOString();
+  console.log(`[AUTH][register] hit ${ts} body=`, req.body?.email);
   try {
-    // Ensure DB ready (cached, short timeouts configured)
-    await connectDB();
-    console.log("[AUTH] DB connected for register");
+    const withStep = (label, promise, ms = 4000) => {
+      console.log(`[AUTH] ${label} start`);
+      return Promise.race([
+        promise,
+        new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)),
+      ]).then((r) => {
+        console.log(`[AUTH] ${label} done`);
+        return r;
+      });
+    };
 
-    const withTimeout = (p, ms, label = 'op') => Promise.race([
-      p,
-      new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms))
-    ]);
+    await withStep("connectDB", connectDB(), 4000);
 
-    const { name, email, password, avatar, role } = req.body;
-    const userExists = await withTimeout(User.findOne({ email }), 2500, 'findOne');
-    if (userExists) return res.status(400).json({ message: "User already exists" });
+    const { fullName, name, email, password, role } = req.body || {};
+    const displayName = fullName || name;
+    if (!displayName || !email || !password) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "name/fullName, email, password are required" });
+    }
 
-    const user = await withTimeout(User.create({ name, email, password, role, avatar }), 3500, 'create');
-    console.log("[AUTH] user created", user._id?.toString());
+    const existing = await withStep("find existing", User.findOne({ email }).lean());
+    if (existing) return res.status(409).json({ ok: false, message: "Email already registered" });
 
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
+    const hash = await withStep("hash", bcrypt.hash(password, 8));
+    const user = await withStep(
+      "create user",
+      User.create({ fullName: displayName, email, password: hash, role: role || "jobseeker" })
+    );
+
+    const token = generateToken(user._id);
+    const safe = {
+      id: user._id,
+      fullName: user.fullName || user.name,
       email: user.email,
-      avatar: user.avatar,
       role: user.role,
-      token: generateToken(user._id),
-      companyName: user.companyName || '',
-      companyDescription: user.companyDescription || '',
-      companyLogo: user.companyLogo || '',
-      resume: user.resume || '',
-    });
-
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+    return res.status(201).json({ ok: true, user: safe, token });
   } catch (err) {
     console.error("[AUTH] register error:", err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ ok: false, message: "Register failed", error: err.message });
   }
 };
 
 // @desc Login user
 exports.login = async (req, res) => {
+  const ts = new Date().toISOString();
+  console.log(`[AUTH][login] hit ${ts} body=`, req.body?.email);
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user || !(await user.matchPassword(password))) {
-      return res.status(401).json({ message: "Invalid email or password" });
+    const withStep = (label, promise, ms = 4000) => {
+      console.log(`[AUTH] ${label} start`);
+      return Promise.race([
+        promise,
+        new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)),
+      ]).then((r) => {
+        console.log(`[AUTH] ${label} done`);
+        return r;
+      });
+    };
+
+    await withStep("connectDB", connectDB(), 4000);
+
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, message: "email and password are required" });
     }
 
-    res.json({
-      _id: user._id,
-      name: user.name,
+    const user = await withStep("find user", User.findOne({ email }));
+    if (!user) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+
+    const ok = await withStep("compare", bcrypt.compare(password, user.password));
+    if (!ok) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+
+    const token = generateToken(user._id);
+    const safe = {
+      id: user._id,
+      fullName: user.fullName || user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id),
-      avatar: user.avatar || '',
-      companyName: user.companyName || '',
-      companyDescription: user.companyDescription || '',
-      companyLogo: user.companyLogo || '',
-      resume: user.resume || '',
-    });
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+    return res.json({ ok: true, user: safe, token });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("[AUTH] login error:", err);
+    return res.status(500).json({ ok: false, message: "Login failed", error: err.message });
   }
 };
 
