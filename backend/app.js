@@ -56,6 +56,20 @@ app.get("/api/ping", (req, res) => {
   });
 });
 
+// DB reachability probe (no route handlers invoked beyond this)
+app.get('/api/db-check', async (req, res) => {
+  try {
+    const withTimeout = (p, ms, label='op') => Promise.race([
+      p,
+      new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms))
+    ]);
+    await withTimeout(connectDB(), 4500, 'Mongo connect');
+    return res.status(200).json({ ok: true, msg: 'Mongo reachable' });
+  } catch (err) {
+    return res.status(503).json({ ok: false, msg: err.message });
+  }
+});
+
 function withTimeout(promise, ms, label = "op") {
   return Promise.race([
     promise,
