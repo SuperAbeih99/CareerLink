@@ -17,8 +17,13 @@ const userSchema = new mongoose.Schema({
 // Encrypt password before save
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
+  try {
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS || "6", 10);
+    this.password = await bcrypt.hash(this.password, rounds);
+    return next();
+  } catch (err) {
+    return next(err);
+  }
 });
 
 // Match entered password
