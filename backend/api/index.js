@@ -5,24 +5,7 @@ console.log(
   process.env.VERCEL_REGION
 );
 
-let serverless;
-try {
-  serverless = require("serverless-http");
-} catch (e) {
-  console.error("[INDEX] failed to require serverless-http:", e);
-  module.exports = async (req, res) => {
-    res.statusCode = 500;
-    res.setHeader("content-type", "application/json");
-    res.end(
-      JSON.stringify({
-        ok: false,
-        where: "serverless-http require",
-        error: String(e),
-      })
-    );
-  };
-  return;
-}
+// Using @vercel/node build, no need for serverless-http
 
 let app;
 try {
@@ -41,4 +24,4 @@ try {
   return;
 }
 
-module.exports = serverless(app);
+module.exports = app;
