@@ -47,6 +47,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Watchdog: fail fast if nothing responded within ~7.5s
+app.use((req, res, next) => {
+  const watchdog = setTimeout(() => {
+    if (!res.headersSent) {
+      console.error(`[WD] timeout for ${req.method} ${req.url}`);
+      res.status(503).json({ ok: false, message: 'Request watchdog timeout' });
+    }
+  }, 7500);
+  res.on('finish', () => clearTimeout(watchdog));
+  res.on('close', () => clearTimeout(watchdog));
+  next();
+});
+
 // ✅ Health MUST be before any DB usage and return instantly
 app.get("/health", (req, res) => {
   console.log(
