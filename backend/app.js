@@ -34,7 +34,8 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+app.options("*", (req, res) => res.sendStatus(204));
 
 // Request log for every invocation (helps trace timeouts)
 app.use((req, res, next) => {
