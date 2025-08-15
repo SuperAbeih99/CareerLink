@@ -12,12 +12,18 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
+// Consistent paths for both local and Vercel
+const API_PREFIX = "/api/v1";
+const BASE_PREFIX = "/api";
+
 // 🔊 boot log
 console.log("[BOOT] app.js loaded at", new Date().toISOString());
 
 // Log every request with timestamps (helps spot where it hangs)
 app.use((req, res, next) => {
-  console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
+  console.log(
+    `[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`
+  );
   next();
 });
 
@@ -59,7 +65,7 @@ app.use((req, res, next) => {
 });
 
 // ✅ Health MUST be before any DB usage and return instantly
-app.get("/health", (req, res) => {
+app.get(`${BASE_PREFIX}/health`, (req, res) => {
   console.log(
     "[HEALTH] hit at",
     new Date().toISOString(),
@@ -69,24 +75,24 @@ app.get("/health", (req, res) => {
   return res.status(200).json({ ok: true, ts: new Date().toISOString() });
 });
 
-// DB-free probe under /api to confirm Express/routing without touching Mongo
-app.get("/api/ping", (req, res) => {
+// DB-free probe
+app.get(`${BASE_PREFIX}/ping`, (req, res) => {
   return res.status(200).json({
     ok: true,
-    where: "app.js /api/ping",
+    where: `app.js ${BASE_PREFIX}/ping`,
     ts: new Date().toISOString(),
   });
 });
 
 // Echo route: should respond instantly to POST with JSON
-app.post("/api/echo", (req, res) => {
+app.post(`${BASE_PREFIX}/echo`, (req, res) => {
   return res
     .status(200)
     .json({ ok: true, echo: req.body || null, ts: new Date().toISOString() });
 });
 
 // DB check: proves we can reach Atlas without touching auth logic
-app.get("/api/db-check", async (req, res) => {
+app.get(`${BASE_PREFIX}/db-check`, async (req, res) => {
   try {
     await connectDB();
     return res.status(200).json({ ok: true, ts: new Date().toISOString() });
@@ -106,8 +112,13 @@ function withTimeout(promise, ms, label = "op") {
 
 // 🛡️ Fast-fail DB connect for API paths only
 app.use(async (req, res, next) => {
-  // allow /health and any non-API path to skip DB check
-  if (req.path === "/health" || !req.path.startsWith("/api/")) return next();
+  // allow /health and any non-versioned path to skip DB check
+  // Versioned API paths begin with /api/v1
+  if (
+    req.path === `${BASE_PREFIX}/health`.replace(/^\/*/, "/") ||
+    !req.path.startsWith("/api/v1/")
+  )
+    return next();
 
   console.log(
     `[DB] connect attempt for ${req.method} ${
@@ -125,20 +136,20 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Routes mounted under /api/v1
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/user", userRoutes);
-app.use("/api/v1/jobs", jobRoutes);
-app.use("/api/v1/applications", applicationRoutes);
-app.use("/api/v1/save-jobs", savedJobsRoutes);
-app.use("/api/v1/analytics", analyticsRoutes);
+// Routes mounted under API prefix
+app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/user`, userRoutes);
+app.use(`${API_PREFIX}/jobs`, jobRoutes);
+app.use(`${API_PREFIX}/applications`, applicationRoutes);
+app.use(`${API_PREFIX}/save-jobs`, savedJobsRoutes);
+app.use(`${API_PREFIX}/analytics`, analyticsRoutes);
 
 // Root info route
 app.get("/", (req, res) => {
   res.json({
     ok: true,
     name: "CareerLink API",
-    endpoints: ["/health", "/api/v1/*"],
+    endpoints: ["/api/health", `${API_PREFIX}/*`],
     ts: new Date().toISOString(),
   });
 });
