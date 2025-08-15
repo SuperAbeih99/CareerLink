@@ -81,8 +81,10 @@ app.get("/api/ping", (req, res) => {
 });
 
 // Echo endpoint to verify JSON body parsing without Mongo
-app.post('/api/_echo', (req, res) => {
-  return res.status(200).json({ ok: true, body: req.body, ts: new Date().toISOString() })
+app.post("/api/_echo", (req, res) => {
+  return res
+    .status(200)
+    .json({ ok: true, body: req.body, ts: new Date().toISOString() });
 });
 
 // DB reachability probe (no route handlers invoked beyond this)
