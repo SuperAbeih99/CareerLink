@@ -1,34 +1,22 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ["jobseeker", "employer"], required: true },
-  avatar: String,
-  resume: String,
-  // for employer
-  companyName: String,
-  companyDescription: String,
-  companyLogo: String,
-}, { timestamps: true, autoIndex: false });
+const userSchema = new mongoose.Schema(
+  {
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ["jobseeker", "employer"], default: "jobseeker" },
+    profileImageUrl: { type: String, default: null },
+  },
+  { timestamps: true }
+);
 
-// Encrypt password before save
-userSchema.pre("save", async function (next) {
+// Only skip re-hash; controller hashes before save
+userSchema.pre("save", function (next) {
+  const p = this.password || "";
   if (!this.isModified("password")) return next();
-  try {
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS || "6", 10);
-    this.password = await bcrypt.hash(this.password, rounds);
-    return next();
-  } catch (err) {
-    return next(err);
-  }
+  if (p.startsWith("$2a$") || p.startsWith("$2b$") || p.startsWith("$2y$")) return next();
+  return next();
 });
 
-// Match entered password
-userSchema.methods.matchPassword = function (enteredPassword) {
-  return bcrypt.compare(enteredPassword, this.password);
-};
-
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
