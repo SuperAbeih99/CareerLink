@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema(
     },
     profileImageUrl: { type: String, default: null },
   },
-  { timestamps: true }
+  { timestamps: true, bufferCommands: false }
 );
 
 // Only skip re-hash; controller hashes before save

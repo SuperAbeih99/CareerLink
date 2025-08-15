@@ -1,106 +1,105 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const connectDB = require("../config/db");
 
-// Generate token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "60d" });
-};
+const COST = 8;
 
-// @desc Register new user
+function withTimeout(promise, ms, label = "op") {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) =>
+      setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 exports.register = async (req, res) => {
-  const ts = new Date().toISOString();
-  console.log(`[AUTH][register] hit ${ts} body=`, req.body?.email);
+  const t0 = Date.now();
+  console.log("[AUTH] /register start");
+
   try {
-    const withStep = (label, promise, ms = 4000) => {
-      console.log(`[AUTH] ${label} start`);
-      return Promise.race([
-        promise,
-        new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)),
-      ]).then((r) => {
-        console.log(`[AUTH] ${label} done`);
-        return r;
-      });
-    };
-
-    await withStep("connectDB", connectDB(), 4000);
-
-    const { fullName, name, email, password, role } = req.body || {};
-    const displayName = fullName || name;
-    if (!displayName || !email || !password) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "name/fullName, email, password are required" });
+    const { fullName, email, password, role } = req.body || {};
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ message: "Missing fields" });
     }
 
-    const existing = await withStep("find existing", User.findOne({ email }).lean());
-    if (existing) return res.status(409).json({ ok: false, message: "Email already registered" });
+    console.log("[AUTH] findOne");
+    const existing = await withTimeout(
+      User.findOne({ email }),
+      4000,
+      "findOne"
+    );
+    if (existing)
+      return res.status(409).json({ message: "Email already registered" });
 
-    const hash = await withStep("hash", bcrypt.hash(password, 8));
-    const user = await withStep(
-      "create user",
-      User.create({ fullName: displayName, email, password: hash, role: role || "jobseeker" })
+    console.log("[AUTH] hash");
+    const hash = await withTimeout(
+      bcrypt.hash(password, COST),
+      4000,
+      "bcrypt.hash"
     );
 
-    const token = generateToken(user._id);
-    const safe = {
-      id: user._id,
-      fullName: user.fullName || user.name,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-    return res.status(201).json({ ok: true, user: safe, token });
+    console.log("[AUTH] create");
+    const user = await withTimeout(
+      User.create({
+        fullName,
+        email,
+        password: hash,
+        role: role || "jobseeker",
+      }),
+      4000,
+      "User.create"
+    );
+
+    console.log("[AUTH] jwt");
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    console.log("[AUTH] ok", Date.now() - t0, "ms");
+    return res.status(201).json({ id: user._id, user, token });
   } catch (err) {
-    console.error("[AUTH] register error:", err);
-    return res.status(500).json({ ok: false, message: "Register failed", error: err.message });
+    console.error("[AUTH] error", err.message);
+    const isTimeout = /timed out/i.test(err.message);
+    return res
+      .status(isTimeout ? 503 : 500)
+      .json({ message: "Error registering", error: err.message });
   }
 };
 
-// @desc Login user
 exports.login = async (req, res) => {
-  const ts = new Date().toISOString();
-  console.log(`[AUTH][login] hit ${ts} body=`, req.body?.email);
+  const t0 = Date.now();
+  console.log("[AUTH] /login start");
   try {
-    const withStep = (label, promise, ms = 4000) => {
-      console.log(`[AUTH] ${label} start`);
-      return Promise.race([
-        promise,
-        new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)),
-      ]).then((r) => {
-        console.log(`[AUTH] ${label} done`);
-        return r;
-      });
-    };
-
-    await withStep("connectDB", connectDB(), 4000);
-
     const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ ok: false, message: "email and password are required" });
-    }
+    if (!email || !password)
+      return res.status(400).json({ message: "Missing fields" });
 
-    const user = await withStep("find user", User.findOne({ email }));
-    if (!user) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+    console.log("[AUTH] findOne");
+    const user = await withTimeout(User.findOne({ email }), 4000, "findOne");
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-    const ok = await withStep("compare", bcrypt.compare(password, user.password));
-    if (!ok) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+    console.log("[AUTH] compare");
+    const ok = await withTimeout(
+      bcrypt.compare(password, user.password),
+      4000,
+      "bcrypt.compare"
+    );
+    if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = generateToken(user._id);
-    const safe = {
-      id: user._id,
-      fullName: user.fullName || user.name,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-    return res.json({ ok: true, user: safe, token });
+    console.log("[AUTH] jwt");
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    console.log("[AUTH] ok", Date.now() - t0, "ms");
+    return res.status(200).json({ id: user._id, user, token });
   } catch (err) {
-    console.error("[AUTH] login error:", err);
-    return res.status(500).json({ ok: false, message: "Login failed", error: err.message });
+    console.error("[AUTH] error", err.message);
+    const isTimeout = /timed out/i.test(err.message);
+    return res
+      .status(isTimeout ? 503 : 500)
+      .json({ message: "Error logging in", error: err.message });
   }
 };
 
