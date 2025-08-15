@@ -52,11 +52,11 @@ app.use((req, res, next) => {
   const watchdog = setTimeout(() => {
     if (!res.headersSent) {
       console.error(`[WD] timeout for ${req.method} ${req.url}`);
-      res.status(503).json({ ok: false, message: 'Request watchdog timeout' });
+      res.status(503).json({ ok: false, message: "Request watchdog timeout" });
     }
   }, 7500);
-  res.on('finish', () => clearTimeout(watchdog));
-  res.on('close', () => clearTimeout(watchdog));
+  res.on("finish", () => clearTimeout(watchdog));
+  res.on("close", () => clearTimeout(watchdog));
   next();
 });
 
@@ -78,6 +78,11 @@ app.get("/api/ping", (req, res) => {
     where: "app.js /api/ping",
     ts: new Date().toISOString(),
   });
+});
+
+// Echo endpoint to verify JSON body parsing without Mongo
+app.post('/api/_echo', (req, res) => {
+  return res.status(200).json({ ok: true, body: req.body, ts: new Date().toISOString() })
 });
 
 // DB reachability probe (no route handlers invoked beyond this)

@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+mongoose.set("bufferCommands", false);
+mongoose.set("strictQuery", true);
 
 let cached =
   global.mongoose || (global.mongoose = { conn: null, promise: null });
@@ -16,7 +18,7 @@ async function connectDB() {
     } catch (_) {}
 
     cached.promise = new Promise((resolve, reject) => {
-      const timeoutMs = 2500;
+      const timeoutMs = 4000;
       const timer = setTimeout(() => {
         console.error("[DB] connect timed out after", timeoutMs, "ms");
         cached.promise = null; // allow retry on next request
@@ -26,15 +28,15 @@ async function connectDB() {
       mongoose
         .connect(uri, {
           dbName: "careerlink",
-          serverSelectionTimeoutMS: 2500,
-          connectTimeoutMS: 2500,
-          socketTimeoutMS: 10000,
+          serverSelectionTimeoutMS: 4000,
+          connectTimeoutMS: 4000,
+          socketTimeoutMS: 20000,
           w: 1,
           wtimeoutMS: 2000,
         })
         .then((m) => {
           clearTimeout(timer);
-          console.log("[DB] connected");
+          console.log("[DB] connected; rs state:", m.connection.readyState);
           resolve(m);
         })
         .catch((err) => {
