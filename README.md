@@ -1,5 +1,7 @@
 # CareerLink
 
+[🌐 Live Demo](https://career-link-frontend-five.vercel.app/)
+
 A full‑stack job portal where **Job Seekers** find, save, and apply to roles, and **Employers** post openings and manage applicants. Built with the **MERN stack** (MongoDB, Express.js, React, Node.js) and JWT auth.
 
 ---
