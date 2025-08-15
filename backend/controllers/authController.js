@@ -1,105 +1,74 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const connectDB = require("../config/db");
 
-const COST = 8;
+// Generate token
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "60d" });
+};
 
-function withTimeout(promise, ms, label = "op") {
-  return Promise.race([
-    promise,
-    new Promise((_, rej) =>
-      setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)
-    ),
-  ]);
-}
-
+// @desc Register new user
 exports.register = async (req, res) => {
-  const t0 = Date.now();
-  console.log("[AUTH] /register start");
-
+  console.log("[AUTH] register route hit", req.body);
   try {
-    const { fullName, email, password, role } = req.body || {};
-    if (!fullName || !email || !password) {
-      return res.status(400).json({ message: "Missing fields" });
-    }
+    // Ensure DB ready (cached, short timeouts configured)
+    await connectDB();
+    console.log("[AUTH] DB connected for register");
 
-    console.log("[AUTH] findOne");
-    const existing = await withTimeout(
-      User.findOne({ email }),
-      4000,
-      "findOne"
-    );
-    if (existing)
-      return res.status(409).json({ message: "Email already registered" });
+    const withTimeout = (p, ms, label = 'op') => Promise.race([
+      p,
+      new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms))
+    ]);
 
-    console.log("[AUTH] hash");
-    const hash = await withTimeout(
-      bcrypt.hash(password, COST),
-      4000,
-      "bcrypt.hash"
-    );
+    const { name, email, password, avatar, role } = req.body;
+    const userExists = await withTimeout(User.findOne({ email }), 2500, 'findOne');
+    if (userExists) return res.status(400).json({ message: "User already exists" });
 
-    console.log("[AUTH] create");
-    const user = await withTimeout(
-      User.create({
-        fullName,
-        email,
-        password: hash,
-        role: role || "jobseeker",
-      }),
-      4000,
-      "User.create"
-    );
+    const user = await withTimeout(User.create({ name, email, password, role, avatar }), 3500, 'create');
+    console.log("[AUTH] user created", user._id?.toString());
 
-    console.log("[AUTH] jwt");
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      token: generateToken(user._id),
+      companyName: user.companyName || '',
+      companyDescription: user.companyDescription || '',
+      companyLogo: user.companyLogo || '',
+      resume: user.resume || '',
     });
 
-    console.log("[AUTH] ok", Date.now() - t0, "ms");
-    return res.status(201).json({ id: user._id, user, token });
   } catch (err) {
-    console.error("[AUTH] error", err.message);
-    const isTimeout = /timed out/i.test(err.message);
-    return res
-      .status(isTimeout ? 503 : 500)
-      .json({ message: "Error registering", error: err.message });
+    console.error("[AUTH] register error:", err);
+    res.status(500).json({ message: err.message });
   }
 };
 
+// @desc Login user
 exports.login = async (req, res) => {
-  const t0 = Date.now();
-  console.log("[AUTH] /login start");
   try {
-    const { email, password } = req.body || {};
-    if (!email || !password)
-      return res.status(400).json({ message: "Missing fields" });
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
 
-    console.log("[AUTH] findOne");
-    const user = await withTimeout(User.findOne({ email }), 4000, "findOne");
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
-
-    console.log("[AUTH] compare");
-    const ok = await withTimeout(
-      bcrypt.compare(password, user.password),
-      4000,
-      "bcrypt.compare"
-    );
-    if (!ok) return res.status(401).json({ message: "Invalid credentials" });
-
-    console.log("[AUTH] jwt");
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+      avatar: user.avatar || '',
+      companyName: user.companyName || '',
+      companyDescription: user.companyDescription || '',
+      companyLogo: user.companyLogo || '',
+      resume: user.resume || '',
     });
-
-    console.log("[AUTH] ok", Date.now() - t0, "ms");
-    return res.status(200).json({ id: user._id, user, token });
   } catch (err) {
-    console.error("[AUTH] error", err.message);
-    const isTimeout = /timed out/i.test(err.message);
-    return res
-      .status(isTimeout ? 503 : 500)
-      .json({ message: "Error logging in", error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 

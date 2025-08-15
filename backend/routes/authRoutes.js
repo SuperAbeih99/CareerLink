@@ -2,9 +2,6 @@ const express = require("express");
 const { register, login, getMe } = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
 const upload = require('../middlewares/uploadMiddleware')
-const connectDB = require('../config/db')
-const bcrypt = require('bcryptjs')
-const User = require('../models/User')
 
 const router = express.Router();
 
@@ -17,14 +14,8 @@ const router = express.Router();
 // TEMP: uncomment this to isolate DB/bcrypt issues. Comment back after testing.
 // router.post('/register', (req, res) => res.status(200).json({ ok: true, msg: 'Dummy register works' }));
 
-router.post('/register', async (req, res, next) => {
-  try {
-    await register(req, res);
-  } catch (e) {
-    next(e);
-  }
-})
-
+// Register & Login (controller handlers)
+router.post('/register', register)
 router.post('/login', login)
 router.get("/me", protect, getMe);
 
