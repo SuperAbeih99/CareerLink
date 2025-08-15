@@ -47,7 +47,12 @@ app.use(
   })
 );
 app.use(express.json({ limit: "1mb" }));
-app.options("*", (req, res) => res.sendStatus(204));
+
+// Safe preflight handler compatible with Express 5 / path-to-regexp v6
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 
 // (request logger defined earlier)
 
