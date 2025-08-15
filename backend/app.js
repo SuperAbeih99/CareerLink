@@ -15,6 +15,12 @@ const app = express();
 // 🔊 boot log
 console.log("[BOOT] app.js loaded at", new Date().toISOString());
 
+// Log every request with timestamps (helps spot where it hangs)
+app.use((req, res, next) => {
+  console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // CORS + JSON first
 const allowed = (process.env.CLIENT_URL || "")
   .split(",")
@@ -37,15 +43,7 @@ app.use(
 app.use(express.json({ limit: "1mb" }));
 app.options("*", (req, res) => res.sendStatus(204));
 
-// Request log for every invocation (helps trace timeouts)
-app.use((req, res, next) => {
-  try {
-    console.log(
-      `[REQ] ${req.method} ${req.url} at ${new Date().toISOString()}`
-    );
-  } catch (_) {}
-  next();
-});
+// (request logger defined earlier)
 
 // Watchdog: fail fast if nothing responded within ~7.5s
 app.use((req, res, next) => {
@@ -80,30 +78,20 @@ app.get("/api/ping", (req, res) => {
   });
 });
 
-// Echo endpoint to verify JSON body parsing without Mongo
-app.post("/api/_echo", (req, res) => {
+// Echo route: should respond instantly to POST with JSON
+app.post("/api/echo", (req, res) => {
   return res
     .status(200)
-    .json({ ok: true, body: req.body, ts: new Date().toISOString() });
+    .json({ ok: true, echo: req.body || null, ts: new Date().toISOString() });
 });
 
-// DB reachability probe (no route handlers invoked beyond this)
+// DB check: proves we can reach Atlas without touching auth logic
 app.get("/api/db-check", async (req, res) => {
   try {
-    const withTimeout = (p, ms, label = "op") =>
-      Promise.race([
-        p,
-        new Promise((_, rej) =>
-          setTimeout(
-            () => rej(new Error(`${label} timed out after ${ms}ms`)),
-            ms
-          )
-        ),
-      ]);
-    await withTimeout(connectDB(), 4500, "Mongo connect");
-    return res.status(200).json({ ok: true, msg: "Mongo reachable" });
-  } catch (err) {
-    return res.status(503).json({ ok: false, msg: err.message });
+    await connectDB();
+    return res.status(200).json({ ok: true, ts: new Date().toISOString() });
+  } catch (e) {
+    return res.status(503).json({ ok: false, error: e.message });
   }
 });
 
