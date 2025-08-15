@@ -24,11 +24,17 @@ const prodOrigin =
 const devOrigin = process.env.DEV_ORIGIN || "http://localhost:3000";
 const allowedOrigins = isProd ? [prodOrigin] : [devOrigin, prodOrigin];
 
+const normalizeOrigin = (url) =>
+  typeof url === "string" ? url.replace(/\/$/, "").toLowerCase() : url;
+
 const corsOptions = {
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(new Error("Not allowed by CORS"));
+    const isAllowed = allowedOrigins
+      .map(normalizeOrigin)
+      .includes(normalizeOrigin(origin));
+    if (isAllowed) return cb(null, true);
+    return cb(new Error(`Not allowed by CORS`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
