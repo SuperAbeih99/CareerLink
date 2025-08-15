@@ -15,16 +15,19 @@ const app = express();
 // 🔊 boot log
 console.log("[BOOT] app.js loaded at", new Date().toISOString());
 
-// CORS + JSON first (Render/Node server compatible)
-const allowed = (process.env.CLIENT_URL || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+// CORS + JSON first (environment-aware)
+const isProd =
+  process.env.NODE_ENV === "production" ||
+  process.env.VERCEL_ENV === "production";
+const prodOrigin =
+  process.env.FRONTEND_URL || "https://career-link-frontend-five.vercel.app";
+const devOrigin = process.env.DEV_ORIGIN || "http://localhost:3000";
+const allowedOrigins = isProd ? [prodOrigin] : [devOrigin, prodOrigin];
 
 const corsOptions = {
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    if (allowed.length === 0 || allowed.includes(origin)) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
     return cb(new Error("Not allowed by CORS"));
   },
   credentials: true,
